@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Repository;
 import uk.gov.ons.census.fwmt.fulfilment.data.GatewayCache;
 
-import javax.persistence.LockModeType;
+import jakarta.persistence.LockModeType;
 
 @Repository
 public interface GatewayCacheRepository extends JpaRepository<GatewayCache, Long> {

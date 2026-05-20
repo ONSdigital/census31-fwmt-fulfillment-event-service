@@ -12,7 +12,7 @@ import uk.gov.ons.census.fwmt.fulfilment.data.GatewayCache;
 import uk.gov.ons.census.fwmt.fulfilment.lookup.PauseRulesLookup;
 import uk.gov.ons.census.fwmt.fulfilment.rabbit.MessagePublisher;
 
-import javax.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Date;
