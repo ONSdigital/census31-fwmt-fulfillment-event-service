@@ -82,6 +82,10 @@ fulfilment:
 
 app:
   testing: false
+  messaging:
+    provider: rabbit
+    destinations:
+      rmField: "RM.Field"
   rabbitmq:
     gw:
       username: "guest"

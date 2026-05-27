@@ -10,7 +10,7 @@ import uk.gov.ons.census.fwmt.common.rm.dto.FwmtActionInstruction;
 import uk.gov.ons.census.fwmt.events.component.GatewayEventManager;
 import uk.gov.ons.census.fwmt.fulfilment.data.GatewayCache;
 import uk.gov.ons.census.fwmt.fulfilment.lookup.PauseRulesLookup;
-import uk.gov.ons.census.fwmt.fulfilment.rabbit.MessagePublisher;
+import uk.gov.ons.census.fwmt.fulfilment.messaging.RmFieldPausePublisher;
 
 import org.springframework.transaction.annotation.Transactional;
 import java.text.SimpleDateFormat;
@@ -41,7 +41,7 @@ public class FulfilmentService {
   private GatewayEventManager eventManager;
 
   @Autowired
-  private MessagePublisher messagePublisher;
+  private RmFieldPausePublisher messagePublisher;
 
   public void processPauseCase(PauseOutcome pauseRequest, Instant messageReceivedTime) {
     GatewayCache indCache = null;
