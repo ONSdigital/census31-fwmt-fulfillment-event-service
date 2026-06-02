@@ -117,3 +117,19 @@ app:
       maxRetries: 1
       prefetchCount: 500
       concurrentConsumers: 10
+
+---
+spring:
+  config:
+    activate:
+      on-property:
+        name: app.messaging.provider
+        having-value: pubsub
+  cloud:
+    gcp:
+      project-id: ${FWMT_PUBSUB_PROJECT:fwmt-local}
+      credentials:
+        enabled: false
+      pubsub:
+        enabled: true
+        emulator-host: ${PUBSUB_EMULATOR_HOST:localhost:8085}

@@ -7,10 +7,12 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import uk.gov.ons.census.fwmt.common.data.fulfillment.dto.PauseOutcome;
 import uk.gov.ons.census.fwmt.common.error.GatewayException;
+import uk.gov.ons.census.fwmt.common.messaging.MessagingProperties;
 import uk.gov.ons.census.fwmt.events.component.GatewayEventManager;
 import uk.gov.ons.census.fwmt.fulfilment.lookup.ChannelLookup;
 import uk.gov.ons.census.fwmt.fulfilment.service.FulfilmentService;
@@ -20,6 +22,10 @@ import java.time.Instant;
 
 @Slf4j
 @Component
+@ConditionalOnProperty(
+    name = MessagingProperties.PROVIDER,
+    havingValue = MessagingProperties.PROVIDER_RABBIT,
+    matchIfMissing = true)
 @RabbitListener(queues = "${app.rabbitmq.gw.exchange.queue}", containerFactory = "fulfilmentQueueListener")
 public class FulfilmentEventReceiver {
 
