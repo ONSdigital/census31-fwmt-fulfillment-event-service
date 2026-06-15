@@ -4,16 +4,13 @@ import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.google.pubsub.v1.PubsubMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import uk.gov.ons.census.fwmt.common.messaging.FieldWorkerInstructionJsonCodec;
-import uk.gov.ons.census.fwmt.common.messaging.MessagingProperties;
 import uk.gov.ons.census.fwmt.common.rm.dto.FwmtActionInstruction;
 import uk.gov.ons.census.fwmt.fulfilment.messaging.RmFieldPausePublisher;
 
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = MessagingProperties.PROVIDER, havingValue = MessagingProperties.PROVIDER_PUBSUB)
 public class PubSubRmFieldPausePublisher implements RmFieldPausePublisher {
 
   private final PubSubTemplate pubSubTemplate;

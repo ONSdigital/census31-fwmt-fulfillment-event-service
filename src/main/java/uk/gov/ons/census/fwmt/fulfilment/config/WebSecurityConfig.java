@@ -16,8 +16,7 @@ public class WebSecurityConfig {
       "/swagger-ui.html",
       "/v3/api-docs/**",
       "/actuator/health",
-      "/info",
-      "/rabbitHealth"
+      "/info"
   };
 
   @Autowired
