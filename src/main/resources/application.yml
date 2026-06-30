@@ -23,9 +23,6 @@ management:
   endpoint:
     health:
       show-details: always
-  health:
-    rabbit:
-      enabled: false
 
 logging:
   profile: DEV
@@ -82,34 +79,23 @@ fulfilment:
 
 app:
   testing: false
-  rabbitmq:
-    gw:
-      username: "guest"
-      password: "guest"
-      host: "localhost"
-      port: 5673
-      virtualHost: "/"
-      initialInterval: 5000
-      multiplier: 3.0
-      maxInterval: 45000
-      prefetchCount: 500
-      concurrentConsumers: 5
-      exchange:
-        queue: "Fulfilment.listener"
-        routingKey: "event.fulfilment.request"
-      exchanges:
-        error: "REMOVE"
-      queues:
-        error: "REMOVE"
-    rm:
-      username: "guest"
-      password: "guest"
-      host: "localhost"
-      port: 5672
-      virtualHost: "/"
-      initialInterval: 5000
-      multiplier: 3.0
-      maxInterval: 45000
-      maxRetries: 1
-      prefetchCount: 500
-      concurrentConsumers: 10
+  messaging:
+    provider: pubsub
+    destinations:
+      rmField: "RM.Field"
+
+---
+spring:
+  config:
+    activate:
+      on-property:
+        name: app.messaging.provider
+        having-value: pubsub
+  cloud:
+    gcp:
+      project-id: ${FWMT_PUBSUB_PROJECT:fwmt-local}
+      credentials:
+        enabled: false
+      pubsub:
+        enabled: true
+        emulator-host: ${PUBSUB_EMULATOR_HOST:localhost:8085}
