@@ -1,4 +1,4 @@
-FROM openjdk:11-jdk-slim
+FROM eclipse-temurin:25-jre
 ARG jar
 
 RUN groupadd -g 997 censusfulfilmentsvc && useradd -r -u 997 -g censusfulfilmentsvc censusfulfilmentsvc
