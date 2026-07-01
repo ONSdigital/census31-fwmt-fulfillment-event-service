@@ -11,7 +11,11 @@ substitutions:
 steps:
   - name: "maven:3.9.16-eclipse-temurin-25"
     id: "build-jar"
-    args: ["-B", "package", "-DskipTests", "-Dmaven.repo.local=/workspace/.m2"]
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        mvn -B package -DskipTests -Dmaven.repo.local=/workspace/.m2    
 
   - name: "gcr.io/cloud-builders/docker"
     id: "build-image"
