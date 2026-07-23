@@ -138,6 +138,7 @@ steps:
       - |
         EFFECTIVE_VERSION="$(cat /workspace/effective-version.txt)"
         docker push "${_DOCKER_REGION}-docker.pkg.dev/${PROJECT_ID}/${_DOCKER_REPO}/${_IMAGE}:$${EFFECTIVE_VERSION}"
+
   - name: gcr.io/cloud-builders/gcloud
     id: notify-build-complete
     entrypoint: bash
