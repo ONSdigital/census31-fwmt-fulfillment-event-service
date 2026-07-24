@@ -16,8 +16,8 @@ import jakarta.persistence.Table;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "gateway_cache")
-public class GatewayCache {
+@Table(name = "gateway_case_record")
+public class GatewayCaseRecord {
   @Id
   @Column(name = "case_id", unique = true, nullable = false)
   public String caseId;

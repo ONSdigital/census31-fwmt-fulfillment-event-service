@@ -8,7 +8,7 @@ import uk.gov.ons.census.fwmt.common.data.fulfillment.dto.PauseOutcome;
 import uk.gov.ons.census.fwmt.common.rm.dto.ActionInstructionType;
 import uk.gov.ons.census.fwmt.common.rm.dto.FwmtActionInstruction;
 import uk.gov.ons.census.fwmt.events.component.GatewayEventManager;
-import uk.gov.ons.census.fwmt.fulfilment.data.GatewayCache;
+import uk.gov.ons.census.fwmt.fulfilment.data.GatewayCaseRecord;
 import uk.gov.ons.census.fwmt.fulfilment.lookup.PauseRulesLookup;
 import uk.gov.ons.census.fwmt.fulfilment.messaging.RmFieldPausePublisher;
 
@@ -35,7 +35,7 @@ public class FulfilmentService {
   private PauseRulesLookup pauseRulesLookup;
 
   @Autowired
-  private GatewayCacheService cacheService;
+  private GatewayCaseRecordService cacheService;
 
   @Autowired
   private GatewayEventManager eventManager;
@@ -44,12 +44,12 @@ public class FulfilmentService {
   private RmFieldPausePublisher messagePublisher;
 
   public void processPauseCase(PauseOutcome pauseRequest, Instant messageReceivedTime) {
-    GatewayCache indCache = null;
+    GatewayCaseRecord indCache = null;
     String caseId;
     String individualCaseId = pauseRequest.getPayload().getFulfilmentRequest().getIndividualCaseId();
     String productCode = pauseRequest.getPayload().getFulfilmentRequest().getFulfilmentCode();
 
-    final GatewayCache caseCache = cacheService.getByIdAndTypeAndExists(pauseRequest.getPayload().getFulfilmentRequest().getCaseId(),
+    final GatewayCaseRecord caseCache = cacheService.getByIdAndTypeAndExists(pauseRequest.getPayload().getFulfilmentRequest().getCaseId(),
         10, true);
 
     if (!Strings.isEmpty(individualCaseId)) {
