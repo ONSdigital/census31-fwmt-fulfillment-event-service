@@ -16,7 +16,7 @@
   <name>census31-fwmt-fulfillment-event-service</name>
 
   <properties>
-    <fwmt.common.version>27.0.1</fwmt.common.version>
+    <fwmt.common.version>27.0.2</fwmt.common.version>
     <fwmt.events.version>27.0.1</fwmt.events.version>
   </properties>
 
