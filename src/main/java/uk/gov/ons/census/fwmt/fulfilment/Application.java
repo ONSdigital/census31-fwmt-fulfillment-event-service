@@ -17,7 +17,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableIntegration
 @EnableJpaRepositories("uk.gov.ons.census.fwmt.fulfilment.repository")
-@ComponentScan({"uk.gov.ons.census.fwmt.fulfilment", "uk.gov.ons.census.fwmt.events"})
+@ComponentScan({"uk.gov.ons.census.fwmt.fulfilment", "uk.gov.ons.census.fwmt.common.events"})
 public class Application {
 
   public static final String APPLICATION_NAME = "FWMT Gateway Fulfilment Service";
