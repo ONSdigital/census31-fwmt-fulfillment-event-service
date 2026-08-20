@@ -139,30 +139,31 @@ steps:
       --message="{}" \
       --attribute=REPO_NAME=census31-fwmt-fulfillment-event-service,SHORT_SHA=$${EFFECTIVE_VERSION},STATUS=SUCCESS
 
-  - name: gcr.io/cloud-builders/git
-    id: Tag release commit
-    secretEnv: ["SSH_KEY"]
-    entrypoint: bash
-    args:
-      - -ceu
-      - |
-        EFFECTIVE_VERSION="$(cat /workspace/effective-version.txt)"
-        mkdir -p /root/.ssh
-        echo "$$SSH_KEY" > /root/.ssh/id_rsa
-        chmod 600 /root/.ssh/id_rsa
-        ssh-keyscan github.com >> /root/.ssh/known_hosts
-        chmod 644 /root/.ssh/known_hosts
-        export GIT_SSH_COMMAND="ssh -i /root/.ssh/id_rsa -o UserKnownHostsFile=/root/.ssh/known_hosts"
-        git config user.name "c31-fwmtg-ci-bot"
-        git config user.email "c31-fwmtg-ci-bot@census.gov.uk"
-        git remote set-url origin git@github.com:ONSdigital/census31-fwmt-fulfillment-event-service.git
-        git tag -a "$${EFFECTIVE_VERSION}" -m "Release $${EFFECTIVE_VERSION}"
-        git push origin "$${EFFECTIVE_VERSION}"
+# TODO: uncomment once the github-ssh-key deploy key is granted write access to this repo
+#  - name: gcr.io/cloud-builders/git
+#    id: Tag release commit
+#    secretEnv: ["SSH_KEY"]
+#    entrypoint: bash
+#    args:
+#      - -ceu
+#      - |
+#        EFFECTIVE_VERSION="$(cat /workspace/effective-version.txt)"
+#        mkdir -p /root/.ssh
+#        echo "$$SSH_KEY" > /root/.ssh/id_rsa
+#        chmod 600 /root/.ssh/id_rsa
+#        ssh-keyscan github.com >> /root/.ssh/known_hosts
+#        chmod 644 /root/.ssh/known_hosts
+#        export GIT_SSH_COMMAND="ssh -i /root/.ssh/id_rsa -o UserKnownHostsFile=/root/.ssh/known_hosts"
+#        git config user.name "c31-fwmtg-ci-bot"
+#        git config user.email "c31-fwmtg-ci-bot@census.gov.uk"
+#        git remote set-url origin git@github.com:ONSdigital/census31-fwmt-fulfillment-event-service.git
+#        git tag -a "$${EFFECTIVE_VERSION}" -m "Release $${EFFECTIVE_VERSION}"
+#        git push origin "$${EFFECTIVE_VERSION}"
 
-availableSecrets:
-  secretManager:
-    - versionName: projects/${_CI_PROJECT_ID}/secrets/github-ssh-key/versions/latest
-      env: SSH_KEY
+# availableSecrets:
+#   secretManager:
+#     - versionName: projects/${_CI_PROJECT_ID}/secrets/github-ssh-key/versions/latest
+#       env: SSH_KEY
 
 substitutions:
   _DOCKER_REGION: europe-west2
