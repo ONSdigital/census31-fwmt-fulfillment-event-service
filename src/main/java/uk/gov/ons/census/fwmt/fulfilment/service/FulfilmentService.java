@@ -4,19 +4,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import uk.gov.ons.census.fwmt.common.data.fulfillment.dto.PauseOutcome;
-import uk.gov.ons.census.fwmt.common.rm.dto.ActionInstructionType;
-import uk.gov.ons.census.fwmt.common.rm.dto.FwmtActionInstruction;
+import uk.gov.ons.census.fwmt.common.action.PauseActionInstruction;
 import uk.gov.ons.census.fwmt.common.events.component.GatewayEventManager;
 import uk.gov.ons.census.fwmt.fulfilment.data.GatewayCaseRecord;
 import uk.gov.ons.census.fwmt.fulfilment.lookup.PauseRulesLookup;
-import uk.gov.ons.census.fwmt.fulfilment.messaging.RmFieldPausePublisher;
+import uk.gov.ons.census.fwmt.fulfilment.messaging.ActionInstructionPublisher;
+import uk.gov.ons.census.fwmt.fulfilment.messaging.model.FulfilmentRequestEvent;
 
 import org.springframework.transaction.annotation.Transactional;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.Date;
-import java.util.Locale;
 
 @Slf4j
 @Service
@@ -41,9 +37,10 @@ public class FulfilmentService {
   private GatewayEventManager eventManager;
 
   @Autowired
-  private RmFieldPausePublisher messagePublisher;
+  private ActionInstructionPublisher messagePublisher;
 
-  public void processPauseCase(PauseOutcome pauseRequest, Instant messageReceivedTime) {
+  public void processPauseCase(FulfilmentRequestEvent pauseRequest, Instant messageReceivedTime,
+      String correlationId) {
     GatewayCaseRecord indCache = null;
     String caseId;
     String individualCaseId = pauseRequest.getPayload().getFulfilmentRequest().getIndividualCaseId();
@@ -64,7 +61,7 @@ public class FulfilmentService {
       if ("CANCEL".equals(indCache.lastActionInstruction) || "CANCEL(HELD)".equals(indCache.lastActionInstruction)) {
         eventManager.triggerEvent(caseId, CASE_ALREADY_CANCELLED);
       } else {
-        sendPause(pauseRequest, messageReceivedTime, caseId, productCode);
+        sendPause(pauseRequest, messageReceivedTime, caseId, productCode, correlationId);
       }
     } else {
       caseId = caseCache.caseId;
@@ -72,36 +69,33 @@ public class FulfilmentService {
         caseId = pauseRequest.getPayload().getFulfilmentRequest().getCaseId();
         eventManager.triggerEvent(caseId, CASE_ALREADY_CANCELLED);
       } else {
-        sendPause(pauseRequest, messageReceivedTime, caseId, productCode);
+        sendPause(pauseRequest, messageReceivedTime, caseId, productCode, correlationId);
       }
     }
   }
 
-  private void sendPause(PauseOutcome pauseRequest, Instant messageReceivedTime, String caseId, String productCode) {
+  private void sendPause(FulfilmentRequestEvent pauseRequest, Instant messageReceivedTime, String caseId,
+      String productCode, String correlationId) {
     String pauseRule;
     pauseRule = pauseRulesLookup.getLookup(pauseRequest.getPayload().getFulfilmentRequest().getFulfilmentCode());
     if (pauseRule == null) {
       eventManager.triggerEvent(caseId, "Could not find a rule for the fulfilment request and product code.",
           UNRECOGNISED_FULFILLMENT_CODE, "Product code", productCode);
     } else if (caseId != null) {
-      FwmtActionInstruction pauseActionInstruction = buildPause(messageReceivedTime, caseId, pauseRule);
-      messagePublisher.pausePublish(pauseActionInstruction);
+      PauseActionInstruction pauseActionInstruction = buildPause(messageReceivedTime, caseId, pauseRule);
+      messagePublisher.publish(pauseActionInstruction, correlationId);
       eventManager.triggerEvent(pauseRequest.getPayload().getFulfilmentRequest().getCaseId(), PAUSE_PROCESSED_AND_SENT);
     }
   }
 
-  private FwmtActionInstruction buildPause(Instant messageReceivedTime, String caseId, String pauseRule) {
-    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
-    Date date = Date.from(messageReceivedTime);
-    String currentDate;
-    currentDate = dateFormat.format(date);
-    return FwmtActionInstruction.builder()
+  private PauseActionInstruction buildPause(Instant messageReceivedTime, String caseId, String pauseRule) {
+    return PauseActionInstruction.builder()
         .caseId(caseId)
-        .actionInstruction(ActionInstructionType.PAUSE)
+        .actionInstruction("PAUSE")
         .surveyName("CENSUS")
         .addressType("HH")
         .addressLevel("U")
-        .pauseFrom(currentDate)
+        .pauseFrom(messageReceivedTime)
         .pauseCode(pauseRule)
         .build();
   }
