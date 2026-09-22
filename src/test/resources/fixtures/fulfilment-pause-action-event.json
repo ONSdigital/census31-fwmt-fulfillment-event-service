@@ -1,18 +1,9 @@
 {
-  "header": {
-    "eventId": "event-123",
-    "eventType": "FIELDWORK_ACTION_INSTRUCTION",
-    "schemaVersion": "1.0",
-    "occurredAt": "2026-09-21T10:15:30Z",
-    "correlationId": "2d91fec8-4f3a-4ce0-ad4f-165815bd5ec4"
-  },
-  "payload": {
-    "actionInstruction": "PAUSE",
-    "surveyName": "CENSUS",
-    "caseId": "case-123",
-    "addressType": "HH",
-    "addressLevel": "U",
-    "pauseCode": "P_OR_H1",
-    "pauseFrom": "2026-09-21T10:15:30Z"
-  }
+  "actionInstruction": "PAUSE",
+  "surveyName": "CENSUS",
+  "caseId": "case-123",
+  "addressType": "HH",
+  "addressLevel": "U",
+  "pauseCode": "P_OR_H1",
+  "pauseFrom": "2026-09-21T10:15:30Z"
 }

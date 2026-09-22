@@ -6,6 +6,8 @@ import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -16,8 +18,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import uk.gov.ons.census.fwmt.common.action.PauseActionInstruction;
 import uk.gov.ons.census.fwmt.fulfilment.messaging.ActionInstructionPublisher;
-import uk.gov.ons.census.fwmt.fulfilment.messaging.model.ActionInstructionEvent;
-import uk.gov.ons.census.fwmt.fulfilment.messaging.model.ActionInstructionHeader;
 
 @Slf4j
 @Service
@@ -27,8 +27,8 @@ public class PubSubActionInstructionPublisher implements ActionInstructionPublis
   private final PubSubTemplate pubSubTemplate;
   private final ObjectMapper objectMapper;
 
-  @Value("${app.messaging.destinations.actionInstruction:event_fieldwork_action-instruction}")
-  private String actionInstructionTopic;
+  @Value("${app.messaging.destinations.actionInstructionInternal:event_fieldwork_action-instruction_internal}")
+  private String actionInstructionInternalTopic;
 
   @Value("${app.messaging.publish-timeout-millis:5000}")
   private long publishTimeoutMillis;
@@ -36,27 +36,28 @@ public class PubSubActionInstructionPublisher implements ActionInstructionPublis
   @Override
   public void publish(PauseActionInstruction pauseActionInstruction, String correlationId) {
     String eventId = UUID.randomUUID().toString();
-    ActionInstructionEvent event = ActionInstructionEvent.builder()
-        .header(ActionInstructionHeader.builder()
-            .eventId(eventId)
-            .eventType("FIELDWORK_ACTION_INSTRUCTION")
-            .schemaVersion("1.0")
-            .occurredAt(Instant.now())
-            .correlationId(correlationId)
-            .build())
-        .payload(pauseActionInstruction)
-        .build();
 
     final String body;
     try {
-      body = objectMapper.writeValueAsString(event);
+      body = objectMapper.writeValueAsString(pauseActionInstruction);
     } catch (JsonProcessingException exception) {
-      throw new IllegalStateException("Unable to serialize action instruction event " + eventId, exception);
+      throw new IllegalStateException("Unable to serialize action instruction " + eventId, exception);
     }
 
+    Map<String, String> attributes = new LinkedHashMap<>();
+    attributes.put("eventId", eventId);
+    attributes.put("correlationId", correlationId == null ? "" : correlationId);
+    attributes.put("caseId", pauseActionInstruction.getCaseId());
+    attributes.put("eventType", "FIELDWORK_ACTION_INSTRUCTION");
+    attributes.put("schemaVersion", "1.0");
+    attributes.put("occurredAt", occurredAt(pauseActionInstruction));
+
     CompletableFuture<String> publishFuture = pubSubTemplate.publish(
-        actionInstructionTopic,
-        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8(body)).build());
+      actionInstructionInternalTopic,
+        PubsubMessage.newBuilder()
+            .setData(ByteString.copyFromUtf8(body))
+            .putAllAttributes(attributes)
+            .build());
     try {
       String messageId = publishFuture.get(publishTimeoutMillis, TimeUnit.MILLISECONDS);
       log.info("Published action instruction eventId={} correlationId={} messageId={}",
@@ -67,5 +68,10 @@ public class PubSubActionInstructionPublisher implements ActionInstructionPublis
     } catch (TimeoutException | java.util.concurrent.ExecutionException exception) {
       throw new IllegalStateException("Unable to publish action instruction " + eventId, exception);
     }
+  }
+
+  private String occurredAt(PauseActionInstruction pauseActionInstruction) {
+    Instant pauseFrom = pauseActionInstruction.getPauseFrom();
+    return pauseFrom == null ? Instant.now().toString() : pauseFrom.toString();
   }
 }
