@@ -100,7 +100,7 @@ app:
     publish-timeout-millis: 5000
     destinations:
       rmField: "RM.Field"
-      actionInstruction: "event_fieldwork_action-instruction"
+      actionInstructionInternal: "event_fieldwork_action-instruction_internal"
 
 ---
 spring:
