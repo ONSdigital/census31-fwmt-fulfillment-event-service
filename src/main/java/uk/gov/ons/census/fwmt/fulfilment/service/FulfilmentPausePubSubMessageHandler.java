@@ -1,16 +1,17 @@
 package uk.gov.ons.census.fwmt.fulfilment.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.pubsub.v1.PubsubMessage;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
+import java.time.OffsetDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import uk.gov.ons.census.fwmt.common.data.fulfillment.dto.PauseOutcome;
+import uk.gov.ons.census.fwmt.common.data.fulfillment.dto.PauseFulfilmentRequest;
 import uk.gov.ons.census.fwmt.common.events.component.GatewayEventManager;
 import uk.gov.ons.census.fwmt.fulfilment.lookup.ChannelLookup;
+import uk.gov.ons.census.fwmt.fulfilment.messaging.model.FulfilmentRequestEvent;
+import uk.gov.ons.census.fwmt.fulfilment.messaging.model.FulfilmentRequestHeader;
 
 @Slf4j
 @Component
@@ -20,73 +21,57 @@ public class FulfilmentPausePubSubMessageHandler {
   private static final String RECEIVED_FULFILMENT = "RECEIVED_FULFILMENT";
   private static final String FAILED_CHANNEL_MATCH = "FAILED_CHANNEL_MATCH";
 
-  private static final String ROUTING_KEY_ATTR = "routingKey";
-  private static final String FULFILMENT_ROUTING_KEY = "event.fulfilment.request";
-  private static final String TIMESTAMP_ATTR = "timestamp";
+  private static final String EXPECTED_TOPIC = "event_fulfilment-request";
+  private static final String EXPECTED_MESSAGE_TYPE = "FULFILMENT_REQUEST";
 
   private final FulfilmentService fulfilmentService;
   private final GatewayEventManager eventManager;
   private final ChannelLookup channelLookup;
   private final ObjectMapper jsonMapper;
 
-  /**
-   * @return true if this message was a fulfilment request and was processed (or failed processing);
-   *     false if the message is for a different routing key and was ignored.
-   */
-  public boolean handle(PubsubMessage message) throws Exception {
-    String routingKey = message.getAttributesOrDefault(ROUTING_KEY_ATTR, "");
-    if (!FULFILMENT_ROUTING_KEY.equals(routingKey)) {
-      return false;
-    }
+  public void handle(PubsubMessage message) throws Exception {
+    String payload = message.getData().toString(StandardCharsets.UTF_8);
+    FulfilmentRequestEvent event = jsonMapper.readValue(payload, FulfilmentRequestEvent.class);
+    validate(event);
 
-    String pausePayload = message.getData().toString(StandardCharsets.UTF_8);
-    Instant receivedMessageTime = parseTimestamp(message);
+    FulfilmentRequestHeader header = event.getHeader();
+    PauseFulfilmentRequest request = event.getPayload().getFulfilmentRequest();
+    OffsetDateTime receivedMessageTime = header.dateTimeAsOffsetDateTime();
+    String channelSent = header.getChannel();
+    String channelId = channelLookup.getLookup(channelSent);
 
-    try {
-      PauseOutcome pauseOutcome = jsonMapper.readValue(pausePayload, PauseOutcome.class);
+    String fulfilmentProductCode = "Fulfilment Product Code";
+    String caseId = "Case ID";
 
-      String channelSent = pauseOutcome.getEvent().getChannel();
-      String channelId = channelLookup.getLookup(channelSent);
-
-      String fulfilmentProductCode = "Fulfilment Product Code";
-      String caseId = "Case ID";
-
-      if (channelId != null) {
-        eventManager.triggerEvent(
-            pauseOutcome.getPayload().getFulfilmentRequest().getCaseId(),
-            RECEIVED_FULFILMENT,
-            caseId,
-            pauseOutcome.getPayload().getFulfilmentRequest().getCaseId(),
-            "Individual CaseId",
-            pauseOutcome.getPayload().getFulfilmentRequest().getIndividualCaseId(),
-            fulfilmentProductCode,
-            pauseOutcome.getPayload().getFulfilmentRequest().getFulfilmentCode());
-        fulfilmentService.processPauseCase(pauseOutcome, receivedMessageTime);
-      } else {
-        eventManager.triggerEvent(
-            pauseOutcome.getPayload().getFulfilmentRequest().getCaseId(),
-            FAILED_CHANNEL_MATCH,
-            "Pause outcome",
-            pauseOutcome.toString(),
-            "Channel",
-            channelSent,
-            fulfilmentProductCode,
-            pauseOutcome.getPayload().getFulfilmentRequest().getFulfilmentCode());
-      }
-      return true;
-    } catch (JsonProcessingException e) {
-      eventManager.triggerErrorEvent(
-          this.getClass(), "Unable to convert message to json", pausePayload, e.getMessage());
-      throw e;
+    if (channelId != null) {
+      eventManager.triggerEvent(
+          request.getCaseId(), RECEIVED_FULFILMENT, caseId, request.getCaseId(),
+          "Individual CaseId", request.getIndividualCaseId(), fulfilmentProductCode,
+          request.getFulfilmentCode());
+      fulfilmentService.processPauseCase(event, receivedMessageTime.toInstant(),
+          header.getCorrelationId() == null ? null : header.getCorrelationId().toString());
+    } else {
+      eventManager.triggerEvent(
+          request.getCaseId(), FAILED_CHANNEL_MATCH, "Pause outcome", event.toString(),
+          "Channel", channelSent, fulfilmentProductCode, request.getFulfilmentCode());
+      throw new IllegalArgumentException("Unsupported fulfilment event channel: " + channelSent);
     }
   }
 
-  private Instant parseTimestamp(PubsubMessage message) {
-    String ts = message.getAttributesOrDefault(TIMESTAMP_ATTR, "");
-    try {
-      return Instant.ofEpochMilli(Long.parseLong(ts));
-    } catch (RuntimeException ex) {
-      return Instant.now();
+  private void validate(FulfilmentRequestEvent event) {
+    if (event == null || event.getHeader() == null || event.getPayload() == null
+        || event.getPayload().getFulfilmentRequest() == null) {
+      throw new IllegalArgumentException("Fulfilment request event must contain header and payload.fulfilmentRequest");
+    }
+    FulfilmentRequestHeader header = event.getHeader();
+    if (!EXPECTED_TOPIC.equals(header.getTopic())) {
+      throw new IllegalArgumentException("Unexpected fulfilment event topic: " + header.getTopic());
+    }
+    if (!EXPECTED_MESSAGE_TYPE.equals(header.getMessageType())) {
+      throw new IllegalArgumentException("Unexpected fulfilment event message type: " + header.getMessageType());
+    }
+    if (header.getDateTime() == null || header.getMessageId() == null) {
+      throw new IllegalArgumentException("Fulfilment event requires dateTime and messageId");
     }
   }
 }
