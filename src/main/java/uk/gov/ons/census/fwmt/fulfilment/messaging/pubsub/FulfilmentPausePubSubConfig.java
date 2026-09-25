@@ -3,6 +3,8 @@ package uk.gov.ons.census.fwmt.fulfilment.messaging.pubsub;
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.google.cloud.spring.pubsub.integration.AckMode;
 import com.google.cloud.spring.pubsub.integration.inbound.PubSubInboundChannelAdapter;
+import com.google.cloud.spring.pubsub.support.BasicAcknowledgeablePubsubMessage;
+import com.google.cloud.spring.pubsub.support.GcpPubSubHeaders;
 import com.google.pubsub.v1.PubsubMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -48,7 +50,7 @@ public class FulfilmentPausePubSubConfig {
     advice.setRetryPolicy(RetryPolicy.withMaxRetries(Math.max(0, localAttempts - 1L)));
     advice.setRecoveryCallback((attributes, failure) -> {
       log.error("Fulfilment message exhausted {} local attempts", localAttempts, failure);
-      throw new IllegalStateException("Fulfilment message failed after local retries", failure);
+      return null;
     });
     return advice;
   }
@@ -58,7 +60,13 @@ public class FulfilmentPausePubSubConfig {
   public MessageHandler fulfilmentPausePubSubHandler(FulfilmentPausePubSubMessageHandler handler) {
     return message -> {
       try {
-        handler.handle((PubsubMessage) message.getPayload());
+        BasicAcknowledgeablePubsubMessage original = message.getHeaders()
+            .get(GcpPubSubHeaders.ORIGINAL_MESSAGE, BasicAcknowledgeablePubsubMessage.class);
+        if (original == null) {
+          throw new IllegalStateException("Missing original Pub/Sub message header");
+        }
+        PubsubMessage pubsubMessage = original.getPubsubMessage();
+        handler.handle(pubsubMessage);
       } catch (Exception exception) {
         log.error("Failed to process fulfilment Pub/Sub message", exception);
         throw new MessageHandlingException(message, "Failed to process fulfilment Pub/Sub message", exception);
