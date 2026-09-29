@@ -18,7 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import uk.gov.ons.census.fwmt.common.action.PauseActionInstruction;
+import uk.gov.ons.census.fwmt.common.dto.fwmt.PauseActionInstruction;
 
 @ExtendWith(MockitoExtension.class)
 class PubSubActionInstructionPublisherTest {

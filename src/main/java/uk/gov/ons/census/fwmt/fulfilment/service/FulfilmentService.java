@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import uk.gov.ons.census.fwmt.common.action.PauseActionInstruction;
+import uk.gov.ons.census.fwmt.common.dto.fwmt.PauseActionInstruction;
 import uk.gov.ons.census.fwmt.common.events.component.GatewayEventManager;
 import uk.gov.ons.census.fwmt.fulfilment.data.GatewayCaseRecord;
 import uk.gov.ons.census.fwmt.fulfilment.lookup.PauseRulesLookup;

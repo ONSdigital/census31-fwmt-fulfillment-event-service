@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import uk.gov.ons.census.fwmt.common.action.PauseActionInstruction;
+import uk.gov.ons.census.fwmt.common.dto.fwmt.PauseActionInstruction;
 import uk.gov.ons.census.fwmt.fulfilment.messaging.ActionInstructionPublisher;
 
 @Slf4j
