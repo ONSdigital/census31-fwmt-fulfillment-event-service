@@ -8,6 +8,7 @@ import com.google.pubsub.v1.PubsubMessage;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -16,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import uk.gov.ons.census.fwmt.common.dto.fwmt.PauseActionInstruction;
+import uk.gov.ons.census.fwmt.common.dto.rm.SuperInstruction;
 import uk.gov.ons.census.fwmt.fulfilment.messaging.ActionInstructionPublisher;
 
 @Slf4j
@@ -34,12 +35,13 @@ public class PubSubActionInstructionPublisher implements ActionInstructionPublis
   private long publishTimeoutMillis;
 
   @Override
-  public void publish(PauseActionInstruction pauseActionInstruction, String correlationId) {
+  public void publish(SuperInstruction instruction, Instant occurredAt, String correlationId) {
+    Objects.requireNonNull(occurredAt, "occurredAt must not be null");
     String eventId = UUID.randomUUID().toString();
 
     final String body;
     try {
-      body = objectMapper.writeValueAsString(pauseActionInstruction);
+      body = objectMapper.writeValueAsString(instruction);
     } catch (JsonProcessingException exception) {
       throw new IllegalStateException("Unable to serialize action instruction " + eventId, exception);
     }
@@ -47,10 +49,10 @@ public class PubSubActionInstructionPublisher implements ActionInstructionPublis
     Map<String, String> attributes = new LinkedHashMap<>();
     attributes.put("eventId", eventId);
     attributes.put("correlationId", correlationId == null ? "" : correlationId);
-    attributes.put("caseId", pauseActionInstruction.getCaseId());
+    attributes.put("caseId", instruction.getCaseId());
     attributes.put("eventType", "FIELDWORK_ACTION_INSTRUCTION");
     attributes.put("schemaVersion", "1.0");
-    attributes.put("occurredAt", occurredAt(pauseActionInstruction));
+    attributes.put("occurredAt", occurredAt.toString());
 
     CompletableFuture<String> publishFuture = pubSubTemplate.publish(
       actionInstructionInternalTopic,
@@ -70,8 +72,4 @@ public class PubSubActionInstructionPublisher implements ActionInstructionPublis
     }
   }
 
-  private String occurredAt(PauseActionInstruction pauseActionInstruction) {
-    Instant pauseFrom = pauseActionInstruction.getPauseFrom();
-    return pauseFrom == null ? Instant.now().toString() : pauseFrom.toString();
-  }
 }

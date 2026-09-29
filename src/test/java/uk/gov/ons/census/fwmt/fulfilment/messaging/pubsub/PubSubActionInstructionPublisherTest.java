@@ -1,6 +1,7 @@
 package uk.gov.ons.census.fwmt.fulfilment.messaging.pubsub;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -71,6 +72,13 @@ class PubSubActionInstructionPublisherTest {
     assertThat(message.getAttributesOrDefault("eventType", "")).isEqualTo("FIELDWORK_ACTION_INSTRUCTION");
     assertThat(message.getAttributesOrDefault("schemaVersion", "")).isEqualTo("1.0");
     assertThat(message.getAttributesOrDefault("occurredAt", "")).isEqualTo(PAUSE_FROM.toString());
+  }
+
+  @Test
+  void requiresAnOccurrenceTime() {
+    assertThatThrownBy(() -> publisher.publish(pauseInstruction(), null, CORRELATION_ID))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("occurredAt must not be null");
   }
 
   private ActionInstruction pauseInstruction() {

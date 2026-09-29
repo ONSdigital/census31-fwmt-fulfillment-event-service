@@ -4,7 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import uk.gov.ons.census.fwmt.common.dto.fwmt.PauseActionInstruction;
+import uk.gov.ons.census.fwmt.common.dto.rm.ActionInstruction;
+import uk.gov.ons.census.fwmt.common.dto.rm.ActionInstructionType;
 import uk.gov.ons.census.fwmt.common.events.component.GatewayEventManager;
 import uk.gov.ons.census.fwmt.fulfilment.data.GatewayCaseRecord;
 import uk.gov.ons.census.fwmt.fulfilment.lookup.PauseRulesLookup;
@@ -82,20 +83,20 @@ public class FulfilmentService {
       eventManager.triggerEvent(caseId, "Could not find a rule for the fulfilment request and product code.",
           UNRECOGNISED_FULFILLMENT_CODE, "Product code", productCode);
     } else if (caseId != null) {
-      PauseActionInstruction pauseActionInstruction = buildPause(messageReceivedTime, caseId, pauseRule);
-      messagePublisher.publish(pauseActionInstruction, correlationId);
+      ActionInstruction pauseActionInstruction = buildPause(messageReceivedTime, caseId, pauseRule);
+      messagePublisher.publish(pauseActionInstruction, messageReceivedTime, correlationId);
       eventManager.triggerEvent(pauseRequest.getPayload().getFulfilmentRequest().getCaseId(), PAUSE_PROCESSED_AND_SENT);
     }
   }
 
-  private PauseActionInstruction buildPause(Instant messageReceivedTime, String caseId, String pauseRule) {
-    return PauseActionInstruction.builder()
+  private ActionInstruction buildPause(Instant messageReceivedTime, String caseId, String pauseRule) {
+    return ActionInstruction.builder()
         .caseId(caseId)
-        .actionInstruction("PAUSE")
+        .actionInstruction(ActionInstructionType.PAUSE)
         .surveyName("CENSUS")
         .addressType("HH")
         .addressLevel("U")
-        .pauseFrom(messageReceivedTime)
+        .pauseFrom(messageReceivedTime.toString())
         .pauseCode(pauseRule)
         .build();
   }

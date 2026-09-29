@@ -1,8 +1,10 @@
 package uk.gov.ons.census.fwmt.fulfilment.messaging;
 
-import uk.gov.ons.census.fwmt.common.dto.fwmt.PauseActionInstruction;
+import java.time.Instant;
+import uk.gov.ons.census.fwmt.common.dto.rm.SuperInstruction;
 
 public interface ActionInstructionPublisher {
 
-  void publish(PauseActionInstruction pauseActionInstruction, String correlationId);
+  /** Publishes an instruction with a required event occurrence time. */
+  void publish(SuperInstruction instruction, Instant occurredAt, String correlationId);
 }
