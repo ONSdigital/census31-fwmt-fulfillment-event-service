@@ -11,17 +11,20 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.retry.RetryPolicy;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.channel.DirectChannel;
+import org.springframework.integration.handler.advice.RequestHandlerRetryAdvice;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
+import org.springframework.messaging.MessageHandlingException;
 import uk.gov.ons.census.fwmt.fulfilment.service.FulfilmentPausePubSubMessageHandler;
 
 @Configuration
 @Slf4j
 public class FulfilmentPausePubSubConfig {
 
-  @Value("${app.messaging.pubsub.fulfilment-events-subscription:fulfilment-event-service-events}")
+  @Value("${app.messaging.pubsub.fulfilment-request-subscription:fulfilment-event-service-fulfilment-request}")
   private String fulfilmentEventsSubscription;
 
   @Bean(name = "fulfilmentPausePubSubInputChannel")
@@ -36,33 +39,37 @@ public class FulfilmentPausePubSubConfig {
     PubSubInboundChannelAdapter adapter =
         new PubSubInboundChannelAdapter(pubSubTemplate, fulfilmentEventsSubscription);
     adapter.setOutputChannel(inputChannel);
-    adapter.setAckMode(AckMode.MANUAL);
+    adapter.setAckMode(AckMode.AUTO);
     return adapter;
   }
 
   @Bean
-  @ServiceActivator(inputChannel = "fulfilmentPausePubSubInputChannel")
+  public RequestHandlerRetryAdvice fulfilmentRetryAdvice(
+      @Value("${app.messaging.local-attempts:3}") int localAttempts) {
+    RequestHandlerRetryAdvice advice = new RequestHandlerRetryAdvice();
+    advice.setRetryPolicy(RetryPolicy.withMaxRetries(Math.max(0, localAttempts - 1L)));
+    advice.setRecoveryCallback((attributes, failure) -> {
+      log.error("Fulfilment message exhausted {} local attempts", localAttempts, failure);
+      return null;
+    });
+    return advice;
+  }
+
+  @Bean
+  @ServiceActivator(inputChannel = "fulfilmentPausePubSubInputChannel", adviceChain = "fulfilmentRetryAdvice")
   public MessageHandler fulfilmentPausePubSubHandler(FulfilmentPausePubSubMessageHandler handler) {
     return message -> {
-      BasicAcknowledgeablePubsubMessage original =
-          message.getHeaders().get(GcpPubSubHeaders.ORIGINAL_MESSAGE, BasicAcknowledgeablePubsubMessage.class);
-      PubsubMessage pubsubMessage = original.getPubsubMessage();
-
       try {
-        boolean handled = handler.handle(pubsubMessage);
-        // Even if it wasn't a fulfilment message, ack it for this subscription.
-        if (handled) {
-          original.ack();
-        } else {
-          original.ack();
+        BasicAcknowledgeablePubsubMessage original = message.getHeaders()
+            .get(GcpPubSubHeaders.ORIGINAL_MESSAGE, BasicAcknowledgeablePubsubMessage.class);
+        if (original == null) {
+          throw new IllegalStateException("Missing original Pub/Sub message header");
         }
-      } catch (RuntimeException ex) {
-        log.error("Failed to process fulfilment Pub/Sub message", ex);
-        original.nack();
-        throw ex;
-      } catch (Exception ex) {
-        log.error("Failed to process fulfilment Pub/Sub message", ex);
-        original.nack();
+        PubsubMessage pubsubMessage = original.getPubsubMessage();
+        handler.handle(pubsubMessage);
+      } catch (Exception exception) {
+        log.error("Failed to process fulfilment Pub/Sub message", exception);
+        throw new MessageHandlingException(message, "Failed to process fulfilment Pub/Sub message", exception);
       }
     };
   }

@@ -1,0 +1,9 @@
+{
+  "actionInstruction": "PAUSE",
+  "surveyName": "CENSUS",
+  "caseId": "case-123",
+  "addressType": "HH",
+  "addressLevel": "U",
+  "pauseCode": "P_OR_H1",
+  "pauseFrom": "2026-09-21T10:15:30Z"
+}
