@@ -18,7 +18,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import uk.gov.ons.census.fwmt.common.dto.fwmt.PauseActionInstruction;
+import uk.gov.ons.census.fwmt.common.dto.rm.ActionInstruction;
+import uk.gov.ons.census.fwmt.common.dto.rm.ActionInstructionType;
 
 @ExtendWith(MockitoExtension.class)
 class PubSubActionInstructionPublisherTest {
@@ -46,7 +47,7 @@ class PubSubActionInstructionPublisherTest {
     when(pubSubTemplate.publish(eq(TOPIC), org.mockito.ArgumentMatchers.any(PubsubMessage.class)))
         .thenReturn(CompletableFuture.completedFuture("message-123"));
 
-    publisher.publish(pauseInstruction(), CORRELATION_ID);
+    publisher.publish(pauseInstruction(), PAUSE_FROM, CORRELATION_ID);
 
     ArgumentCaptor<PubsubMessage> messageCaptor = ArgumentCaptor.forClass(PubsubMessage.class);
     verify(pubSubTemplate).publish(eq(TOPIC), messageCaptor.capture());
@@ -57,7 +58,10 @@ class PubSubActionInstructionPublisherTest {
     assertThat(payload.get("actionInstruction").asText()).isEqualTo("PAUSE");
     assertThat(payload.get("surveyName").asText()).isEqualTo("CENSUS");
     assertThat(payload.get("caseId").asText()).isEqualTo(CASE_ID);
+    assertThat(payload.get("addressType").asText()).isEqualTo("HH");
+    assertThat(payload.get("addressLevel").asText()).isEqualTo("U");
     assertThat(payload.get("pauseCode").asText()).isEqualTo("P_OR_H1");
+    assertThat(payload.get("pauseFrom").asText()).isEqualTo(PAUSE_FROM.toString());
     assertThat(payload.has("header")).isFalse();
     assertThat(payload.has("payload")).isFalse();
 
@@ -69,15 +73,15 @@ class PubSubActionInstructionPublisherTest {
     assertThat(message.getAttributesOrDefault("occurredAt", "")).isEqualTo(PAUSE_FROM.toString());
   }
 
-  private PauseActionInstruction pauseInstruction() {
-    return PauseActionInstruction.builder()
-        .actionInstruction("PAUSE")
+  private ActionInstruction pauseInstruction() {
+    return ActionInstruction.builder()
+        .actionInstruction(ActionInstructionType.PAUSE)
         .surveyName("CENSUS")
         .caseId(CASE_ID)
         .addressType("HH")
         .addressLevel("U")
         .pauseCode("P_OR_H1")
-        .pauseFrom(PAUSE_FROM)
+        .pauseFrom(PAUSE_FROM.toString())
         .build();
   }
 }
