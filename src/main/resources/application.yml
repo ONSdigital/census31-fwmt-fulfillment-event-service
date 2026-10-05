@@ -94,8 +94,12 @@ app:
   testing: false
   messaging:
     provider: pubsub
+    pubsub:
+      fulfilment-request-subscription: "fulfilment-event-service-fulfilment-request"
+    local-attempts: 3
+    publish-timeout-millis: 5000
     destinations:
-      rmField: "RM.Field"
+      actionInstructionInternal: "event_fieldwork_action-instruction_internal"
 
 ---
 spring:

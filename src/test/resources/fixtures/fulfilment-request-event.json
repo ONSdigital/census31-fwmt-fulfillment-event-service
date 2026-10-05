@@ -1,0 +1,19 @@
+{
+  "header": {
+    "topic": "event_fulfilment-request",
+    "messageType": "FULFILMENT_REQUEST",
+    "source": "CONTACT_CENTRE_API",
+    "channel": "CC",
+    "version": "0.5.0",
+    "dateTime": "2026-09-21T10:15:30Z",
+    "messageId": "1d91fec8-4f3a-4ce0-ad4f-165815bd5ec4",
+    "correlationId": "2d91fec8-4f3a-4ce0-ad4f-165815bd5ec4"
+  },
+  "payload": {
+    "fulfilmentRequest": {
+      "fulfilmentCode": "ENH1",
+      "caseId": "case-123",
+      "individualCaseId": "individual-123"
+    }
+  }
+}
