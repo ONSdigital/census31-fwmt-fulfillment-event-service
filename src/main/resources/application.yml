@@ -95,7 +95,8 @@ app:
   messaging:
     provider: pubsub
     pubsub:
-      fulfilment-request-subscription: "fulfilment-event-service-fulfilment-request"
+      rm-project-id: ${RM_PUBSUB_PROJECT:}
+      fulfilment-request-subscription: "event_fulfilment-request_fwmtg"
     local-attempts: 3
     publish-timeout-millis: 5000
     destinations:

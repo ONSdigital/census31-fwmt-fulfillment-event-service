@@ -1,6 +1,7 @@
 package uk.gov.ons.census.fwmt.fulfilment.messaging.pubsub;
 
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
+import com.google.cloud.spring.pubsub.core.subscriber.PubSubSubscriberOperations;
 import com.google.cloud.spring.pubsub.integration.AckMode;
 import com.google.cloud.spring.pubsub.integration.inbound.PubSubInboundChannelAdapter;
 import com.google.cloud.spring.pubsub.support.BasicAcknowledgeablePubsubMessage;
@@ -24,7 +25,7 @@ import uk.gov.ons.census.fwmt.fulfilment.service.FulfilmentPausePubSubMessageHan
 @Slf4j
 public class FulfilmentPausePubSubConfig {
 
-  @Value("${app.messaging.pubsub.fulfilment-request-subscription:fulfilment-event-service-fulfilment-request}")
+  @Value("${app.messaging.pubsub.fulfilment-request-subscription:event_fulfilment-request_fwmtg}")
   private String fulfilmentEventsSubscription;
 
   @Bean(name = "fulfilmentPausePubSubInputChannel")
@@ -35,9 +36,9 @@ public class FulfilmentPausePubSubConfig {
   @Bean
   public PubSubInboundChannelAdapter fulfilmentPausePubSubInbound(
       @Qualifier("fulfilmentPausePubSubInputChannel") MessageChannel inputChannel,
-      PubSubTemplate pubSubTemplate) {
-    PubSubInboundChannelAdapter adapter =
-        new PubSubInboundChannelAdapter(pubSubTemplate, fulfilmentEventsSubscription);
+      @Qualifier("rmPubSubTemplate") PubSubSubscriberOperations rmPubSubTemplate) {
+    PubSubInboundChannelAdapter adapter = new PubSubInboundChannelAdapter(
+        rmPubSubTemplate, fulfilmentEventsSubscription);
     adapter.setOutputChannel(inputChannel);
     adapter.setAckMode(AckMode.AUTO);
     return adapter;
