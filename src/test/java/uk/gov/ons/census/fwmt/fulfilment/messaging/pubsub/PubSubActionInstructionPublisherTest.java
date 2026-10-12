@@ -25,7 +25,7 @@ import uk.gov.ons.census.fwmt.common.dto.rm.ActionInstructionType;
 @ExtendWith(MockitoExtension.class)
 class PubSubActionInstructionPublisherTest {
 
-  private static final String TOPIC = "event_fieldwork_action-instruction_internal";
+  private static final String TOPIC = "event_action-instruction_internal";
   private static final String CASE_ID = "case-123";
   private static final String CORRELATION_ID = "correlation-123";
   private static final Instant PAUSE_FROM = Instant.parse("2026-09-21T10:15:30Z");
