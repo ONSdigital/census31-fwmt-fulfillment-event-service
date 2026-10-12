@@ -28,7 +28,7 @@ public class PubSubActionInstructionPublisher implements ActionInstructionPublis
   private final PubSubTemplate pubSubTemplate;
   private final ObjectMapper objectMapper;
 
-  @Value("${app.messaging.destinations.actionInstructionInternal:event_fieldwork_action-instruction_internal}")
+  @Value("${app.messaging.destinations.actionInstructionInternal:event_action-instruction_internal}")
   private String actionInstructionInternalTopic;
 
   @Value("${app.messaging.publish-timeout-millis:5000}")

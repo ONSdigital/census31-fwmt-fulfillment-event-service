@@ -100,7 +100,7 @@ app:
     local-attempts: 3
     publish-timeout-millis: 5000
     destinations:
-      actionInstructionInternal: "event_fieldwork_action-instruction_internal"
+      actionInstructionInternal: "event_action-instruction_internal"
 
 ---
 spring:
