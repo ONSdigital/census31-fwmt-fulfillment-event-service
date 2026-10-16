@@ -56,7 +56,8 @@ public class FulfilmentService {
 
     if (caseCache == null && indCache == null) {
       caseId = pauseRequest.getPayload().getFulfilmentRequest().getCaseId();
-      eventManager.triggerEvent(caseId, "Could not find an existing record or case is not a household", NO_RECORD_FOUND);
+      eventManager.triggerEvent(caseId, NO_RECORD_FOUND, "Reason",
+          "Could not find an existing record or case is not a household");
     } else if (caseCache == null) {
       caseId = indCache.individualCaseId;
       if ("CANCEL".equals(indCache.lastActionInstruction) || "CANCEL(HELD)".equals(indCache.lastActionInstruction)) {
@@ -80,8 +81,9 @@ public class FulfilmentService {
     String pauseRule;
     pauseRule = pauseRulesLookup.getLookup(pauseRequest.getPayload().getFulfilmentRequest().getFulfilmentCode());
     if (pauseRule == null) {
-      eventManager.triggerEvent(caseId, "Could not find a rule for the fulfilment request and product code.",
-          UNRECOGNISED_FULFILLMENT_CODE, "Product code", productCode);
+      eventManager.triggerEvent(caseId, UNRECOGNISED_FULFILLMENT_CODE, "Reason",
+          "Could not find a rule for the fulfilment request and product code.",
+          "Product code", productCode);
     } else if (caseId != null) {
       ActionInstruction pauseActionInstruction = buildPause(messageReceivedTime, caseId, pauseRule);
       messagePublisher.publish(pauseActionInstruction, messageReceivedTime, correlationId);
